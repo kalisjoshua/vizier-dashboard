@@ -16,6 +16,7 @@
       details {
         border: 1px solid;
         border-radius: 1ex;
+        box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2);
         overflow: clip;
         padding: 1em;
       }
@@ -58,20 +59,11 @@
       </nav>
     </header>
 
-    <main style="display: none; padding: 0 1em">
-      <details open>
+    <main style="visibility: hidden; padding: 0 1em">
+      <details>
         <summary><h2>Overview</h2></summary>
 
-        <figure is="cc-project-overview">
-          <img
-            src="https://sonarcloud.io/api/project_badges/measure?project=visitingmedia_ttx-backend&metric=coverage&token=fd5a3fcced077e6507b1b610d0c88c64779b682d"
-            alt="Coverage statistics for project"
-          />
-          <img
-            src="https://sonarcloud.io/api/project_badges/measure?project=visitingmedia_ttx-frontend&metric=coverage&token=90307afb036ff0e039439001aeabc5197f394f7c"
-            alt="Coverage statistics for project"
-          />
-        </figure>
+        <figure is="cc-project-overview"></figure>
       </details>
 
       <details>
@@ -110,31 +102,35 @@
       </details>
     </main>
 
-    <dialog is="access-config" style="border-radius: 2ex; width: 30em">
+    <dialog is="cc-access-config" style="border-radius: 2ex; width: 30em">
       <h2>Access Config</h2>
 
-      <label for="org">Organization Name</label>
+      <p>All of this should be available in 1Password under the title "Metrics Dashboard"; and should autofill.</p>
+
+      <label for="org">GitHub Organization Name</label>
 
       <div style="display: flex">
-        <input id="org" style="flex-grow: 1" type="" />
+        <input id="org" name="org" style="flex-grow: 1" />
       </div>
 
-      <label for="repos">Repositories (name only; one per line)</label>
+      <label for="repos">Repositories</label>
 
       <div style="display: flex">
-        <textarea id="repos" style="height: 6em"></textarea>
+        <input id="repos" name="repos" style="flex-grow: 1" />
       </div>
 
-      <p>
-        To use this application you will need to provide an API token for authenticated requests. This should be
-        available in 1Password under the title "Github Token - TTX Dashboard". The token will be stored in localStorage
-        between user sessions for convenience.
-      </p>
+      <p style="margin-top: 0"><em>The list (comma separated) of repositories (names) to view metrics for.</em></p>
 
-      <label for="token">Token</label>
+      <label for="token">GitHub Personal Access Token (PAT)</label>
 
       <div style="display: flex">
-        <textarea id="token" style="height: 6em"></textarea>
+        <input id="token" name="token" style="flex-grow: 1" type="password" />
+      </div>
+
+      <label for="key">Encryption Key</label>
+
+      <div style="display: flex">
+        <input id="key" name="key" onfocus="this.blur();" style="flex-grow: 1" />
       </div>
 
       <div style="display: flex; justify-content: space-between">
@@ -142,6 +138,15 @@
         <button>Save</button>
       </div>
     </dialog>
+
+    <footer>
+      <button
+        is="cc-encrypted-copy-link"
+        title="Copy encrypted data to clipboard for hosting as fetch-able server side cache"
+      >
+        Copy data
+      </button>
+    </footer>
 
     <script src="./lib/global.js"></script>
     <script type="module" src="./init.mjs"></script>

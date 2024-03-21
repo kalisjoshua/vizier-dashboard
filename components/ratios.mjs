@@ -24,6 +24,9 @@ const caseInsensitiveAlphaSort = (function () {
 export function displayRatios(data) {
   const excludedNames = ["devops-vistingmedia", "dependabot[bot]", "mzyla-softserve"];
 
+  // clear the element to not continually add the same content multiple times
+  DOM_EL.innerHTML = "";
+
   Object.entries(getCounts(data))
     .filter(([name]) => !excludedNames.includes(name.toLowerCase()))
     .sort(caseInsensitiveAlphaSort)

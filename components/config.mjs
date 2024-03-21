@@ -1,9 +1,11 @@
 import { githubSDKFactory } from "../lib/gh.mjs";
 
-const NAME = "access-config";
-const configDialog = inDOM(`[is="${NAME}"]`);
+const NAME = "cc-access-config";
+const SEP = ",";
+export const configDialog = inDOM(`[is="${NAME}"]`);
 
 class AccessConfig extends HTMLDialogElement {
+  #inputKey;
   #inputOrg;
   #inputRepos;
   #inputToken;
@@ -18,6 +20,7 @@ class AccessConfig extends HTMLDialogElement {
       }
     });
 
+    this.#inputKey = this.querySelector("#key");
     this.#inputOrg = this.querySelector("#org");
     this.#inputRepos = this.querySelector("#repos");
     this.#inputToken = this.querySelector("#token");
@@ -47,10 +50,12 @@ class AccessConfig extends HTMLDialogElement {
     const button = document.createElement("button");
 
     button.addEventListener("click", () => {
-      const { org, repos, token } = configManager.read();
+      const { key, org, repos, token } = configManager.read();
 
+      this.#inputKey.value = key;
       this.#inputOrg.value = org;
-      this.#inputRepos.value = repos ? repos.join("\n") : "";
+      this.#inputOrg.value = org;
+      this.#inputRepos.value = repos ? repos.join(SEP) : "";
       this.#inputToken.value = token;
       this.showModal();
     });
@@ -65,17 +70,18 @@ class AccessConfig extends HTMLDialogElement {
   async #saveHandler(event) {
     event.preventDefault();
 
+    const key = this.#inputKey.value.trim();
     const org = this.#inputOrg.value.trim();
     const repos = this.#inputRepos.value
       .trim()
-      .split("\n")
-      .map((line) => line.trim())
+      .split(SEP)
+      .map((name) => name.trim())
       .filter(Boolean);
     const token = this.#inputToken.value.trim();
     const updateToken = token ? await tokenTest(token) : confirm("Are you sure that you want to erase your token?");
 
     if (org && repos && updateToken) {
-      configManager.write({ org, repos, token });
+      configManager.write({ key, org, repos, token });
 
       this.close();
     } else if (token) {
@@ -95,7 +101,7 @@ class AccessConfig extends HTMLDialogElement {
 
 customElements.define(NAME, AccessConfig, { extends: "dialog" });
 
-const configManager = (function () {
+export const configManager = (function () {
   const CONFIG_KEY = "config";
   const listeners = [];
 
@@ -103,15 +109,12 @@ const configManager = (function () {
     onChange: (fn) => listeners.push(fn),
     getToken: () => api.read().token,
     setToken(token) {
-      api.write({
-        ...api.read(),
-        token,
-      });
+      api.write({ ...api.read(), token });
     },
     read: () => JSON.parse(localStorage.getItem(CONFIG_KEY) ?? "{}"),
-    write({ org, repos, token }) {
-      localStorage.setItem(CONFIG_KEY, JSON.stringify({ org, repos, token }));
-      listeners.forEach((fn) => fn({ org, repos, token }));
+    write({ key, org, repos, token }) {
+      localStorage.setItem(CONFIG_KEY, JSON.stringify({ key, org, repos, token }));
+      listeners.forEach((fn) => fn({ key, org, repos, token }));
     },
   };
 
@@ -123,5 +126,3 @@ async function tokenTest(token) {
 
   return status >= 200 && status < 300;
 }
-
-export { configDialog, configManager };
