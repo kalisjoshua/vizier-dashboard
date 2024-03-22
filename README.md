@@ -1,4 +1,4 @@
-# Metrics Dashboard
+# Vizier Dashboard
 
 This dashboard displays project metrics on: contribution ratios, pull request open time, and sonarcloud badges as an overview.
 
@@ -18,7 +18,7 @@ Zero dependencies.
 
 ```bash
 # start a server
-npx http-server
+npx http-server src
 
 # testing - coming soon
 node --test

@@ -1,0 +1,22 @@
+{
+  "name": "vizier-dashboard",
+  "version": "1.0.0",
+  "description": "pull request metrics dashboard",
+  "main": "src/index.html",
+  "directories": {
+    "src": "src"
+  },
+  "scripts": {
+    "start": "npx http-server src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kalisjoshua/vizier-dashboard.git"
+  },
+  "author": "Joshua T Kalis <kalisjoshua@gmail.com> (https://kalisjoshua.me/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kalisjoshua/vizier-dashboard/issues"
+  },
+  "homepage": "https://github.com/kalisjoshua/vizier-dashboard#readme"
+}

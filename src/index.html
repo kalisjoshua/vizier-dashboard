@@ -73,7 +73,7 @@
       <details is="cc-config-editor" open>
         <summary><h2>Config</h2></summary>
 
-        <p>All of this should be available in 1Password under the title "Metrics Dashboard"; and should autofill.</p>
+        <p>All of this should be available in a password manager (like 1Password or LastPass).</p>
 
         <label for="token">GitHub Personal Access Token (PAT)</label>
 
@@ -92,7 +92,7 @@
         <label for="config-string">Application Config</label>
 
         <div style="display: flex">
-          <!-- this input exists so that 1Password can autofill a field; 1Password does not autofill textarea elements :( -->
+          <!-- this input exists so that a password manager can autofill a field; some do not autofill textarea elements :( -->
           <input
             id="config-string"
             name="config-string"
@@ -100,7 +100,11 @@
             style="flex-grow: 1"
             title="This field is not editable"
           />
-          <button data-type="copy" disabled title="Copy the config (as a JSON string) to update in 1Password.">
+          <button
+            data-type="copy"
+            disabled
+            title="Copy the config (as a JSON string) to update in your password manager."
+          >
             Copy config
           </button>
         </div>
