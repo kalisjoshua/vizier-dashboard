@@ -6,6 +6,7 @@
     <title>Metrics Dashboard</title>
 
     <script
+      deferred
       crossorigin="anonymous"
       integrity="sha512-7i9wEYbrbsYuFcCvlOk0icJsijxfLfpUsOwh9J7S9baGIZKseOh8L/YMxM1v/PD9/J6PYxKcqmIYIsSQrZ5S7Q=="
       referrerpolicy="no-referrer"
@@ -41,16 +42,21 @@
         margin-bottom: 1em;
       }
 
+      button,
+      input,
+      textarea {
+        margin: 1em 0;
+        padding: 5px;
+      }
+
       input,
       textarea {
         flex-grow: 1;
-        margin: 1em 0;
-        padding: 5px;
       }
     </style>
   </head>
 
-  <body style="margin: 0; min-height: 100vh; padding: 0">
+  <body style="font-family: sans-serif; margin: 0; min-height: 100vh; padding: 0 1em">
     <header style="display: flex">
       <h1 style="flex-grow: 1">Metrics Dashboard</h1>
 
@@ -59,14 +65,80 @@
       </nav>
     </header>
 
-    <main style="visibility: hidden; padding: 0 1em">
-      <details>
+    <main>
+      <details is="cc-config-editor" open>
+        <summary><h2>Config</h2></summary>
+
+        <p>All of this should be available in 1Password under the title "Metrics Dashboard"; and should autofill.</p>
+
+        <label for="token">GitHub Personal Access Token (PAT)</label>
+
+        <div style="display: flex">
+          <input
+            id="token"
+            name="token"
+            onfocus="this.blur();"
+            style="flex-grow: 1"
+            title="This field is not editable"
+            type="password"
+          />
+          <button data-type="test">Test token</button>
+        </div>
+
+        <label for="config-string">Application Config</label>
+
+        <div style="display: flex">
+          <!-- this input exists so that 1Password can autofill a field; 1Password does not autofill textarea elements :( -->
+          <input
+            id="config-string"
+            name="config-string"
+            onfocus="this.blur();"
+            style="flex-grow: 1"
+            title="This field is not editable"
+          />
+          <button data-type="copy" disabled title="Copy the config (as a JSON string) to update in 1Password.">
+            Copy config
+          </button>
+        </div>
+
+        <p style="margin-top: 0"><em>Use the textarea (below) to edit the "Application Config" (JSON).</em></p>
+
+        <div style="display: flex">
+          <textarea id="config-json" name="config-json" rows="10" style="flex-grow: 1"></textarea>
+        </div>
+
+        <div id="formatting-errors"></div>
+
+        <div style="align-items: center; display: flex; justify-content: flex-end">
+          <p
+            id="error-invalidJSON"
+            style="
+              background: pink;
+              border-radius: 5px;
+              color: darkred;
+              flex-grow: 1;
+              margin: 0 1em 0 0;
+              padding: 1ex 1em;
+              text-align: right;
+              visibility: hidden;
+            "
+          >
+            Invalid config object
+          </p>
+
+          <button disabled title="Save the configuration and initialize the application." type="submit">
+            Save Config
+          </button>
+        </div>
+      </details>
+
+      <details style="visibility: hidden">
         <summary><h2>Overview</h2></summary>
 
         <figure is="cc-project-overview"></figure>
       </details>
 
-      <details>
+      <details style="visibility: hidden">
         <summary><h2>Contribution Ratios</h2></summary>
 
         <p>
@@ -88,7 +160,7 @@
         <article id="ratios"></article>
       </details>
 
-      <details>
+      <details style="visibility: hidden">
         <summary><h2>Open Time</h2></summary>
 
         <article>
@@ -100,53 +172,23 @@
           <div id="openTimeGraph" style="height: 800px; margin: 0 auto; width: 1400px"></div>
         </article>
       </details>
+
+      <details style="visibility: hidden">
+        <summary><h2>Data</h2></summary>
+
+        <p>
+          To update the "server" "cache" copy the encrypted data to the system clipboard and update the data.json file
+          in the repo.
+        </p>
+
+        <button
+          is="cc-encrypted-copy-link"
+          title="Copy encrypted data to clipboard for hosting as fetch-able server side cache"
+        >
+          Copy data
+        </button>
+      </details>
     </main>
-
-    <dialog is="cc-access-config" style="border-radius: 2ex; width: 30em">
-      <h2>Access Config</h2>
-
-      <p>All of this should be available in 1Password under the title "Metrics Dashboard"; and should autofill.</p>
-
-      <label for="org">GitHub Organization Name</label>
-
-      <div style="display: flex">
-        <input id="org" name="org" style="flex-grow: 1" />
-      </div>
-
-      <label for="repos">Repositories</label>
-
-      <div style="display: flex">
-        <input id="repos" name="repos" style="flex-grow: 1" />
-      </div>
-
-      <p style="margin-top: 0"><em>The list (comma separated) of repositories (names) to view metrics for.</em></p>
-
-      <label for="token">GitHub Personal Access Token (PAT)</label>
-
-      <div style="display: flex">
-        <input id="token" name="token" style="flex-grow: 1" type="password" />
-      </div>
-
-      <label for="key">Encryption Key</label>
-
-      <div style="display: flex">
-        <input id="key" name="key" onfocus="this.blur();" style="flex-grow: 1" />
-      </div>
-
-      <div style="display: flex; justify-content: space-between">
-        <button>Test token</button>
-        <button>Save</button>
-      </div>
-    </dialog>
-
-    <footer>
-      <button
-        is="cc-encrypted-copy-link"
-        title="Copy encrypted data to clipboard for hosting as fetch-able server side cache"
-      >
-        Copy data
-      </button>
-    </footer>
 
     <script src="./lib/global.js"></script>
     <script type="module" src="./init.mjs"></script>

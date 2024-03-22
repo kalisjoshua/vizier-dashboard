@@ -1,8 +1,9 @@
-import { configDialog, configManager } from "./components/config.mjs";
+import { ConfigEditor } from "./components/configEditor.mjs";
 import { getCopyLink } from "./components/encryptedCopyLink.mjs";
 // import { displayOverview } from "./components/projectOverview.mjs";
 import { displayRatios } from "./components/ratios.mjs";
 import { StatusDialog } from "./components/statusDialog.mjs";
+import { configManager } from "./lib/configManager.mjs";
 import { decrypt } from "./lib/crypto.mjs";
 import { displayOpenTimes } from "./lib/open.mjs";
 import { prManagerFactory } from "./lib/prManager.mjs";
@@ -13,12 +14,10 @@ function appInit() {
   const token = configManager.getToken();
 
   if (token) {
-    runAnalysis();
-  } else {
-    configDialog.showModal();
+    runAnalysis(configManager.read());
   }
 
-  configManager.onChange(runAnalysis);
+  ConfigEditor.onUpdate(runAnalysis);
 }
 
 function decryptServerCache(key, list) {
@@ -34,12 +33,13 @@ function decryptServerCache(key, list) {
   });
 }
 
-async function runAnalysis() {
-  const { key, org, repos, token } = configManager.read();
-
-  if (!key) throw new Error("No encryption key available for decryption.");
-
+async function runAnalysis({ encryptionKey, org, token, ...reposConfig }) {
+  const repos = Object.keys(reposConfig);
   const pulls = prManagerFactory(org, repos, token);
+
+  const [configPanel, ...otherPanels] = inDOM("details");
+  configPanel.removeAttribute("open");
+  otherPanels.forEach((panel) => (panel.style.visibility = "visible"));
 
   if (!pulls.hasData()) {
     const { config, data, updated_at } = (await fetch("data.json").then((r) => r.json())) ?? {};
@@ -50,7 +50,7 @@ async function runAnalysis() {
       StatusDialog.appendTo(document.body);
 
       // decrypt all of the pr records and write them to localStorage
-      pulls.write(await Promise.all(decryptServerCache(key, data), updated_at));
+      pulls.write(await Promise.all(decryptServerCache(encryptionKey, data), updated_at));
     } else {
       StatusDialog.setMessage("Fetching all data will take a long time... seriously... a long time.");
       StatusDialog.setTitle("Fetching source data");
