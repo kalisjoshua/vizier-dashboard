@@ -27,3 +27,17 @@ node --test
 # Cached Data
 
 The file `./data.json` is a shortcut to alleviate the need to fetch all information from the GitHub API for all new visitors; which can take a significant amount of time depending on the number of repositories and pull requests. This file is encrypted so it is stored locally in `localStorage`. The "server cached" file can/should be updated infrequently to keep load times down.
+
+# Use
+
+In one project using this the package defines this project as a dependent module and copy its contents into a `docs/` directory for hosting on GitHub Pages.
+
+```
+  "scripts": {
+    "clean": "rm -rf docs && mkdir docs",
+    "install": "cp -r node_modules/vizier-dashboard/src/* docs",
+    "preinstall": "npm run clean",
+    "postinstall": "cp index.html data.json docs",
+    "start": "npx http-server"
+  },
+```
