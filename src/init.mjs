@@ -20,19 +20,6 @@ function appInit() {
   ConfigEditor.onUpdate(runAnalysis);
 }
 
-function decryptServerCache(key, list) {
-  StatusDialog.dispatchEvent(`<p>${list.length} PR records retrieved from server cache.</p>`);
-  StatusDialog.dispatchEvent(`<p>Beginning decryption of server cached PR data.</p>`);
-
-  return list.map(async (pr, index) => {
-    StatusDialog.dispatchEvent(`<p>Decrypting data for PR ${index} of ${list.length}.</p>`);
-
-    const result = JSON.parse(await decrypt(pr, key));
-
-    return result;
-  });
-}
-
 async function fetchServerCache(pulls, encryptionKey) {
   const { data, updated_at } = (await fetch("data.json").then((r) => r.json())) ?? {};
 
@@ -41,8 +28,22 @@ async function fetchServerCache(pulls, encryptionKey) {
     StatusDialog.setTitle("Fetching server cache");
     StatusDialog.appendTo(document.body);
 
-    // decrypt all of the pr records and write them to localStorage
-    pulls.write(await Promise.all(decryptServerCache(encryptionKey, data)), updated_at);
+    StatusDialog.dispatchEvent(`<p>${data.length} PR records retrieved from server cache.</p>`);
+    StatusDialog.dispatchEvent(`<p>Beginning decryption of server cached PR data.</p>`);
+
+    await [
+      Promise.resolve(data),
+      (all) =>
+        all.map(async (pr, index, { length }) => {
+          StatusDialog.dispatchEvent(`<p>Decrypting data for PR ${index} of ${length}.</p>`);
+
+          // decrypt all of the pr records
+          return JSON.parse(await decrypt(pr, encryptionKey));
+        }),
+      (pending) => Promise.all(pending),
+      // write decrypted data to localStorage
+      (resolved) => pulls.write(resolved, updated_at),
+    ].reduce(async (input, fn) => fn(await input));
   } else {
     StatusDialog.setMessage("Fetching all data will take a long time... seriously... a long time.");
     StatusDialog.setTitle("Fetching source data");
@@ -64,9 +65,7 @@ async function runAnalysis({ encryptionKey, org, token, ...reposConfig }) {
   configPanel.removeAttribute("open");
   otherPanels.forEach((panel) => (panel.style.visibility = "visible"));
 
-  if (!pulls.hasData()) {
-    await fetchServerCache(pulls, encryptionKey);
-  }
+  if (!pulls.hasData()) await fetchServerCache(pulls, encryptionKey);
 
   const { data } = pulls.read();
 
