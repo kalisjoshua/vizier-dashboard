@@ -1,6 +1,6 @@
 {
   "name": "vizier-dashboard",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "pull request metrics dashboard",
   "main": "src/index.html",
   "directories": {

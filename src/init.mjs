@@ -36,13 +36,13 @@ function decryptServerCache(key, list) {
 async function fetchServerCache(pulls, encryptionKey) {
   const { data, updated_at } = (await fetch("data.json").then((r) => r.json())) ?? {};
 
-  if (data) {
+  if (data?.length) {
     StatusDialog.setMessage("Decrypting each record will take a little time so please be patient.");
     StatusDialog.setTitle("Fetching server cache");
     StatusDialog.appendTo(document.body);
 
     // decrypt all of the pr records and write them to localStorage
-    pulls.write(await Promise.all(decryptServerCache(encryptionKey, data), updated_at));
+    pulls.write(await Promise.all(decryptServerCache(encryptionKey, data)), updated_at);
   } else {
     StatusDialog.setMessage("Fetching all data will take a long time... seriously... a long time.");
     StatusDialog.setTitle("Fetching source data");
@@ -74,10 +74,10 @@ async function runAnalysis({ encryptionKey, org, token, ...reposConfig }) {
   displayOpenTimes(data);
   Overview.render(org, reposConfig);
 
+  getCopyLink().initialize(configManager, pulls);
+
   inDOM("main").style.visibility = "visible";
   Overview.showPanelContents();
-
-  getCopyLink().initialize(configManager, pulls);
 }
 
 addEventListener("DOMContentLoaded", appInit);
