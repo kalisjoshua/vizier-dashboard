@@ -1,6 +1,6 @@
 import { ConfigEditor } from "./components/configEditor.mjs";
 import { getCopyLink } from "./components/encryptedCopyLink.mjs";
-// import { displayOverview } from "./components/projectOverview.mjs";
+import { Overview } from "./components/projectOverview.mjs";
 import { displayRatios } from "./components/ratios.mjs";
 import { StatusDialog } from "./components/statusDialog.mjs";
 import { configManager } from "./lib/configManager.mjs";
@@ -33,6 +33,29 @@ function decryptServerCache(key, list) {
   });
 }
 
+async function fetchServerCache(pulls, encryptionKey) {
+  const { data, updated_at } = (await fetch("data.json").then((r) => r.json())) ?? {};
+
+  if (data) {
+    StatusDialog.setMessage("Decrypting each record will take a little time so please be patient.");
+    StatusDialog.setTitle("Fetching server cache");
+    StatusDialog.appendTo(document.body);
+
+    // decrypt all of the pr records and write them to localStorage
+    pulls.write(await Promise.all(decryptServerCache(encryptionKey, data), updated_at));
+  } else {
+    StatusDialog.setMessage("Fetching all data will take a long time... seriously... a long time.");
+    StatusDialog.setTitle("Fetching source data");
+    StatusDialog.appendTo(document.body);
+
+    StatusDialog.dispatchEvent("<p>No data from server. Fetching from source.</p>");
+
+    await pulls.get();
+  }
+
+  StatusDialog.getDialog().setComplete("<p>All data updated.</p>");
+}
+
 async function runAnalysis({ encryptionKey, org, token, ...reposConfig }) {
   const repos = Object.keys(reposConfig);
   const pulls = prManagerFactory(org, repos, token);
@@ -42,35 +65,17 @@ async function runAnalysis({ encryptionKey, org, token, ...reposConfig }) {
   otherPanels.forEach((panel) => (panel.style.visibility = "visible"));
 
   if (!pulls.hasData()) {
-    const { config, data, updated_at } = (await fetch("data.json").then((r) => r.json())) ?? {};
-
-    if (data) {
-      StatusDialog.setMessage("Decrypting each record will take a little time so please be patient.");
-      StatusDialog.setTitle("Fetching server cache");
-      StatusDialog.appendTo(document.body);
-
-      // decrypt all of the pr records and write them to localStorage
-      pulls.write(await Promise.all(decryptServerCache(encryptionKey, data), updated_at));
-    } else {
-      StatusDialog.setMessage("Fetching all data will take a long time... seriously... a long time.");
-      StatusDialog.setTitle("Fetching source data");
-      StatusDialog.appendTo(document.body);
-
-      StatusDialog.dispatchEvent("<p>No data from server. Fetching from source.</p>");
-
-      await pulls.get();
-    }
-
-    StatusDialog.getDialog().setComplete("<p>All data updated.</p>");
+    fetchServerCache(pulls, encryptionKey);
   }
 
   const { data } = pulls.read();
 
   displayRatios(data);
   displayOpenTimes(data);
-  // displayOverview(configManager.read());
+  Overview.render(org, reposConfig);
 
   inDOM("main").style.visibility = "visible";
+  Overview.showPanelContents();
 
   getCopyLink().initialize(configManager, pulls);
 }

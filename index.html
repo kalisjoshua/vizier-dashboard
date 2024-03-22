@@ -14,6 +14,10 @@
     ></script>
 
     <style>
+      a:hover {
+        text-decoration: none;
+      }
+
       details {
         border: 1px solid;
         border-radius: 1ex;
@@ -39,7 +43,7 @@
       }
 
       details[open] summary h2 {
-        margin-bottom: 1em;
+        margin-bottom: 1ex;
       }
 
       button,
@@ -135,7 +139,7 @@
       <details style="visibility: hidden">
         <summary><h2>Overview</h2></summary>
 
-        <figure is="cc-project-overview"></figure>
+        <div is="cc-project-overview" style="display: flex; gap: 1em"></div>
       </details>
 
       <details style="visibility: hidden">
