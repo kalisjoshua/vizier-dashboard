@@ -65,7 +65,7 @@ async function runAnalysis({ encryptionKey, org, token, ...reposConfig }) {
   otherPanels.forEach((panel) => (panel.style.visibility = "visible"));
 
   if (!pulls.hasData()) {
-    fetchServerCache(pulls, encryptionKey);
+    await fetchServerCache(pulls, encryptionKey);
   }
 
   const { data } = pulls.read();
