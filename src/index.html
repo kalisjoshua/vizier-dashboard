@@ -28,6 +28,7 @@
         box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2);
         overflow: clip;
         padding: 1em;
+        visibility: hidden;
       }
 
       details + details {
@@ -144,13 +145,13 @@
         </div>
       </details>
 
-      <details style="visibility: hidden">
+      <details id="projects-overview">
         <summary><h2>Overview</h2></summary>
 
-        <div is="cc-project-overview" style="display: flex; gap: 1em"></div>
+        <div id="overview-badges" style="display: flex; gap: 1em"></div>
       </details>
 
-      <details style="visibility: hidden">
+      <details id="ratios">
         <summary><h2>Contribution Ratios</h2></summary>
 
         <p>
@@ -169,10 +170,10 @@
           own pull requests. Or, "Are we providing as much feedback as we are asking for?"
         </p>
 
-        <article id="ratios"></article>
+        <article id="ratios--cards"></article>
       </details>
 
-      <details style="visibility: hidden">
+      <details id="openTimes">
         <summary><h2>Open Time</h2></summary>
 
         <article>
@@ -181,11 +182,11 @@
             PRs that were "merged", and open for more than 1 day.
           </p>
 
-          <div id="openTimeGraph" style="height: 800px; margin: 0 auto; width: 1400px"></div>
+          <div id="openTimes--graph" style="height: 800px; margin: 0 auto; width: 1400px"></div>
         </article>
       </details>
 
-      <details style="visibility: hidden">
+      <details id="copyData">
         <summary><h2>Data</h2></summary>
 
         <p>
@@ -202,7 +203,52 @@
       </details>
     </main>
 
-    <script src="./lib/global.js"></script>
-    <script type="module" src="./init.mjs"></script>
+    <script>
+      const inDOM = (s = "") => {
+        const all = Array.from(document.querySelectorAll(s));
+
+        return all.length === 1 ? all[0] : all;
+      };
+    </script>
+    <script type="module">
+      import { cacheManager } from "./modules/cacheManager.mjs";
+      import { configManager } from "./modules/config.mjs";
+      import { displayOverview } from "./modules/overview.mjs";
+      import { prManager } from "./modules/prManager.mjs";
+      import { createOpenTimesPlot } from "./modules/openTimes.mjs";
+      import { addRatioCards } from "./modules/ratios.mjs";
+      import { statusDialog } from "./modules/statusDialog.mjs";
+      import { encryptedCopy } from "./modules/encryptedCopyLink.mjs";
+
+      // TODO: add app-version vector to the config to verify needing to invalidate local cache of data/credentials
+
+      function render() {
+        const { data } = cacheManager.read();
+        const { encryptionKey, org, token, ...reposConfig } = configManager.read();
+
+        displayOverview(org, reposConfig);
+
+        addRatioCards(data);
+        inDOM(`#ratios`).style.visibility = "visible";
+
+        createOpenTimesPlot(data);
+        inDOM("#openTimes").style.visibility = "visible";
+
+        // dataCopy.sub(cacheManager.events.UPDATED, "render");
+        inDOM("#copyData").style.visibility = "visible";
+      }
+
+      addEventListener("DOMContentLoaded", function appInit() {
+        cacheManager.sub(configManager.events.VALID, "onValidConfig");
+        prManager.sub(configManager.events.VALID, "onInit");
+
+        cacheManager.sub(cacheManager.events.UPDATED, render);
+        statusDialog.sub(prManager.events.REQUEST, "handleEvents");
+        statusDialog.sub(encryptedCopy.events.ENCRYPT, "handleEvents");
+        Object.values(cacheManager.events).forEach((event) => statusDialog.sub(event, "handleEvents"));
+
+        configManager.init();
+      });
+    </script>
   </body>
 </html>

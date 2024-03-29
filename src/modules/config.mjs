@@ -1,10 +1,64 @@
-import { debounce } from "../lib/debounce.mjs";
-import { githubSDKFactory } from "../lib/gh.mjs";
-import { configManager } from "../lib/configManager.mjs";
+import { debounce } from "./debounce.mjs";
+import { fetchWithToken } from "./fetchWithToken.mjs";
+import { pubsubFactory } from "./pubsub.mjs";
 
 const NAME = "cc-config-editor";
+const STORE_KEY = "config";
 
-export class ConfigEditor extends HTMLDetailsElement {
+export const configManager = pubsubFactory("config", {
+  events: { VALID: "CONFIG_EVENT_VALID" },
+
+  getValidations(config = this.read()) {
+    const missing = [];
+    const missingProp = (name) => missing.push(`Missing "${name}" property.`);
+
+    const { encryptionKey, org, token, ...reposConfig } = config;
+
+    ["encryptionKey", "org", "token"].forEach((prop) => {
+      if (!config[prop]) missingProp(prop);
+    });
+
+    if (!Object.keys(reposConfig).length) {
+      missing.push(`No repositories defined.`);
+    } else {
+      const expectedProps = ["sonar"];
+
+      Object.entries(reposConfig).forEach(([name, repo]) => {
+        const props = Object.keys(repo);
+
+        expectedProps.forEach((expected) => {
+          if (!props.includes(expected)) {
+            missingProp(`${name}.${expected}`);
+          }
+        });
+      });
+    }
+
+    return missing;
+  },
+
+  init() {
+    const el = inDOM(`[is="${NAME}"]`);
+
+    el.style.visibility = "visible";
+
+    if (this.isValid()) {
+      el.removeAttribute("open");
+
+      this.pub("VALID", configManager.read());
+    }
+  },
+
+  isValid(config = this.read()) {
+    return !this.getValidations(config).length;
+  },
+
+  read: () => JSON.parse(localStorage.getItem(STORE_KEY) ?? "{}"),
+
+  write: (config) => localStorage.setItem(STORE_KEY, JSON.stringify(config)),
+});
+
+class ConfigEditor extends HTMLDetailsElement {
   #buttonCopy;
   #buttonSave;
   #buttonTest;
@@ -12,7 +66,6 @@ export class ConfigEditor extends HTMLDetailsElement {
   #configString;
   #errors;
   #invalid;
-  static #listeners = [];
   #needingCleanup = [];
   #token;
 
@@ -26,15 +79,19 @@ export class ConfigEditor extends HTMLDetailsElement {
     this.#invalid = inDOM(`[is="${NAME}"] #error-invalidJSON`);
     this.#token = inDOM(`[is="${NAME}"] #token`);
 
-    const debounced = debounce(this.#updateConfigString);
-
-    this.#withCleanup(this.#configJSON, "blur", debounced);
-    this.#withCleanup(this.#configJSON, "change", debounced);
-    this.#withCleanup(this.#configJSON, "keyup", debounced, 500);
-    this.#withCleanup(this.#configString, "change", this.#handle1PasswordImport);
-    this.#withCleanup(this.#buttonCopy, "click", this.#handleCopy);
+    this.#withCleanup(this.#buttonCopy, "click", this.#handleClipboard);
     this.#withCleanup(this.#buttonSave, "click", this.#handleSave);
     this.#withCleanup(this.#buttonTest, "click", this.#handleTest);
+    this.#withCleanup(
+      this.#configJSON,
+      ["blur", "change", "keyup"],
+      debounce(() => {
+        if (this.#isValid()) {
+          this.#configString.value = JSON.stringify(JSON.parse(this.#configJSON.value));
+        }
+      }, 500)
+    );
+    this.#withCleanup(this.#configString, "change", this.#handleAutofill);
 
     this.#loadLocalState();
     this.#setValid(true, true);
@@ -44,13 +101,13 @@ export class ConfigEditor extends HTMLDetailsElement {
     this.#needingCleanup.forEach(([el, event, fn]) => el.removeEventListener(event, fn));
   }
 
-  #handle1PasswordImport() {
+  #handleAutofill() {
     this.#configJSON.value = JSON.stringify(JSON.parse(this.#configString.value.trim()), null, 2);
 
     this.#isValid();
   }
 
-  async #handleCopy() {
+  async #handleClipboard() {
     // NOTE: no need to try/catch because there is no mitigation if it does fail
     await navigator.clipboard.writeText(this.#configString.value.trim());
   }
@@ -60,8 +117,10 @@ export class ConfigEditor extends HTMLDetailsElement {
 
     const token = this.#token.value.trim();
 
-    // TODO: maybe? switch from alert to custom dialog
-    if (!(await ConfigEditor.#tokenTest(token))) alert("The token provided is not valid.");
+    if (!(await ConfigEditor.#tokenTest(token))) {
+      // TODO: maybe? switch from alert to custom dialog
+      alert("The token provided is not valid.");
+    }
     // if (!this.#isValid()) // this isn't possible because the button is disabled when invalid
     else if (this.#isValid()) {
       configManager.write({
@@ -69,7 +128,9 @@ export class ConfigEditor extends HTMLDetailsElement {
         ...JSON.parse(this.#configString.value),
       });
 
-      ConfigEditor.#listeners.forEach((fn) => fn(configManager.read()));
+      configManager.pub(configManager.events.VALID, configManager.read());
+
+      inDOM(`[is="${NAME}"]`).removeAttribute("open");
     }
   }
 
@@ -89,45 +150,29 @@ export class ConfigEditor extends HTMLDetailsElement {
   #isValid() {
     this.#errors.innerHTML = "";
 
-    const expectedProps = ["sonar"];
-    const missing = [];
-
-    let isValid = !!this.#token.value;
+    let errors = [];
     let parsed;
 
     try {
       parsed = JSON.parse(this.#configJSON.value);
     } catch (e) {
-      isValid = false;
+      errors.push(`Invalid JSON input.`);
     }
 
     if (parsed) {
-      const { encryptionKey, org, ...repos } = parsed;
-
-      if (!encryptionKey) missing.push("encryptionKey");
-      if (!org) missing.push("org");
-
-      // NOTE: need to go over all repos so that each gets validated and none are skipped because prior repos are invalid
-      Object.entries(repos).forEach(([name, repo]) => {
-        expectedProps.every((prop) => {
-          if (!Object.keys(repo).includes(prop)) {
-            missing.push(`${name}.${prop}`);
-          }
-        });
+      errors = configManager.getValidations({
+        ...parsed,
+        token: this.#token.value.trim(),
       });
-
-      if (!Object.values(repos).length) this.#errors.innerHTML += `<p>No repos defined.</p>`;
-
-      isValid &&= !!Object.values(repos).length && !missing.length;
     }
 
-    missing.forEach((name) => {
-      this.#errors.innerHTML += `<p>Missing the "${name}" property.</p>`;
-    });
+    if (errors.length) {
+      this.#errors.innerHTML = errors.map((str) => `<p>${str}</p>`).join("\n");
+    }
 
-    this.#setValid(isValid);
+    this.#setValid(!errors.length);
 
-    return isValid;
+    return !errors.length;
   }
 
   #loadLocalState() {
@@ -135,11 +180,6 @@ export class ConfigEditor extends HTMLDetailsElement {
 
     this.#token.value = token;
     this.#configJSON.value = JSON.stringify(config, null, 2);
-    this.#updateConfigString();
-  }
-
-  static onUpdate(fn) {
-    this.#listeners.push(fn);
   }
 
   // NOTE: intentionally not giving second arg a default value to take advantage of nullish coalescing
@@ -150,23 +190,19 @@ export class ConfigEditor extends HTMLDetailsElement {
   }
 
   static async #tokenTest(token) {
-    const { status } = await githubSDKFactory(token, false)("octocat");
+    const { status } = await fetchWithToken(token, "octocat");
 
     return status >= 200 && status < 300;
-  }
-
-  #updateConfigString() {
-    if (this.#isValid()) {
-      this.#configString.value = JSON.stringify(JSON.parse(this.#configJSON.value.trim()));
-    }
   }
 
   #withCleanup(el, event, method) {
     const fn = method.bind(this);
 
-    el.addEventListener(event, fn);
+    (event.map ? event : [event]).forEach((event) => {
+      el.addEventListener(event, fn);
 
-    this.#needingCleanup.push([el, event, fn]);
+      this.#needingCleanup.push([el, event, fn]);
+    });
   }
 }
 

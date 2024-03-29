@@ -1,6 +1,6 @@
 const yearAndMonth = (str) => (str ? str.match(/(\d{4})-(\d{2})/).slice(1, 3) : []);
 
-export function displayOpenTimes(data) {
+export function createOpenTimesPlot(data) {
   const graphData = Object.values(data).reduce((acc, pr) => {
     if (pr.state === "merged" && pr.days_open > 1) {
       const [year, month] = yearAndMonth(pr.closed_at);
@@ -27,5 +27,5 @@ export function displayOpenTimes(data) {
     },
   };
 
-  Plotly.newPlot("openTimeGraph", plots, layout);
+  Plotly.newPlot("openTimes--graph", plots, layout);
 }

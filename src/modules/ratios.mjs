@@ -1,6 +1,6 @@
-const DOM_EL = inDOM(`#ratios`);
 const NAME = "cc-ratio-card";
 const ONE_DAY = 1000 * 60 * 60 * 24;
+const WRAPPER = inDOM(`#ratios--cards`);
 
 function calcStackedBarValues(comment = 0, author = 0) {
   let ratio = parseFloat((comment >= author ? 1 : comment / author).toFixed(2));
@@ -21,11 +21,11 @@ const caseInsensitiveAlphaSort = (function () {
   };
 })();
 
-export function displayRatios(data) {
+export function addRatioCards(data) {
   const excludedNames = ["devops-vistingmedia", "dependabot[bot]", "mzyla-softserve"];
 
   // clear the element to not continually add the same content multiple times
-  DOM_EL.innerHTML = "";
+  WRAPPER.innerHTML = "";
 
   Object.entries(getCounts(data))
     .filter(([name]) => !excludedNames.includes(name.toLowerCase()))
@@ -104,7 +104,7 @@ class RatioCard extends HTMLElement {
       <div id="${id}" style="height: 40px; margin: 0 auto; width: 180px;"></div>
     `;
 
-    DOM_EL.appendChild(el);
+    WRAPPER.appendChild(el);
 
     const colorAuthor = Array(5).fill("gainsboro");
     const colorComment = Array(5).fill("green");
