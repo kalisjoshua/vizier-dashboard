@@ -45,6 +45,11 @@ export const configManager = pubsubFactory("config", {
     if (this.isValid()) {
       el.removeAttribute("open");
 
+      // FIXME: there is probably a better way to go about this using `attributeChangedCallback`
+      // populate the field for copy-ing
+      inDOM(`[is="${NAME}"] #config-string`).value = JSON.stringify(configManager.read());
+      inDOM(`[is="${NAME}"] button[data-type="copy"]`).disabled = false;
+
       this.pub("VALID", configManager.read());
     }
   },

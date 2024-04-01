@@ -1,5 +1,4 @@
 import { decrypt } from "./crypto.mjs";
-import { prManager } from "./prManager.mjs";
 import { pubsubFactory } from "./pubsub.mjs";
 
 const ONE_HOUR = 1000 * 60 * 60;
@@ -15,8 +14,8 @@ const lastUpdated = () => read()?.updated_at;
 
 const events = {
   DECRYPT: "EVENT_CACHE_MANAGER_DECRYPT", // decrypt server cached data
+  EXPIRED: "EVENT_CACHE_MANAGER_EXPIRED", // the cached data has expired/gone stale
   HISTORY: "EVENT_CACHE_MANAGER_HISTORY", // server cache
-  SOURCE: "EVENT_CACHE_MANAGER_SOURCE", // GitHub API
   STATUS: "EVENT_CACHE_MANAGER_STATUS", //
   UPDATED: "EVENT_CACHE_MANAGER_UPDATED", // localStorage updated
 };
@@ -45,78 +44,6 @@ async function decryptServerCache(encryptionKey, data) {
   );
 }
 
-async function onValidConfig({ encryptionKey, org, token, ...reposConfig }) {
-  const title = "Local Data";
-
-  if (!cacheManager.hasData()) {
-    let decrypted;
-    let serverCache;
-
-    cacheManager.pub(events.HISTORY, { level: "info", message: "Fetching server cache.", title });
-    try {
-      serverCache = await fetch("data.json").then((r) => r.json());
-
-      cacheManager.pub(events.HISTORY, { level: "info", message: "Successfully received server cache." });
-    } catch (e) {
-      cacheManager.pub(events.HISTORY, { level: "error", message: "Failed to fetch server cache." });
-    }
-
-    if (serverCache) {
-      cacheManager.pub(events.HISTORY, { level: "info", message: "Decrypting server cache." });
-      try {
-        decrypted = await decryptServerCache(encryptionKey, serverCache.data);
-
-        cacheManager.pub(events.HISTORY, { level: "info", message: "Successfully decrypted server cache." });
-      } catch (e) {
-        cacheManager.pub(events.DECRYPT, { level: "error", message: "Failed to completely decrypt server cache." });
-      }
-    }
-
-    if (decrypted) {
-      write(decrypted, serverCache.updated_at);
-
-      cacheManager.pub(events.SOURCE, { level: "info", message: "Decrypted data stored in localStorage." });
-    }
-  }
-
-  if (!isFresh()) {
-    let data;
-
-    if (cacheManager.hasData()) {
-      cacheManager.pub(events.SOURCE, { level: "info", message: "Updating open PRs and recently closed.", title });
-    } else {
-      cacheManager.pub(events.SOURCE, { level: "info", message: "Fetching all PRs from the GitHub API...", title });
-      cacheManager.pub(events.SOURCE, { level: "info", message: "This will take a long time..." });
-      cacheManager.pub(events.SOURCE, { level: "info", message: "Seriously..." });
-      cacheManager.pub(events.SOURCE, { level: "info", message: "a..." });
-      cacheManager.pub(events.SOURCE, { level: "info", message: "long..." });
-      cacheManager.pub(events.SOURCE, { level: "info", message: "time." });
-    }
-
-    try {
-      data = await prManager.get(hasData() ? "open" : "all");
-    } catch (e) {
-      cacheManager.pub(events.UPDATED, { level: "error", message: "Failed to update localStorage data." });
-
-      throw e;
-    }
-
-    if (data) {
-      write(data, Date.now());
-    }
-  }
-
-  cacheManager.pub(events.UPDATED, {
-    config: {
-      org,
-      reposConfig,
-    },
-    level: "complete",
-    message: "Data up to data.",
-    // title, // include to show dialog even if everything is up to date; disable to skip a dialog when up to date
-  });
-}
-
 function read() {
   const cache = localStorage.getItem(STORE_KEY);
 
@@ -142,7 +69,65 @@ export const cacheManager = pubsubFactory("cacheManager", {
   hasData,
   isFresh,
   lastUpdated,
-  onValidConfig,
+
+  onUpdated({ data }) {
+    if (data) {
+      write(data, Date.now());
+    }
+
+    cacheManager.pub(events.UPDATED, {
+      level: "complete",
+      message: "Data up to data.",
+      // title, // include to show dialog even if everything is up to date; disable to skip a dialog when up to date
+    });
+  },
+
+  async onValidConfig({ encryptionKey }) {
+    const title = "Local Data";
+
+    if (!cacheManager.hasData()) {
+      let decrypted;
+      let serverCache;
+
+      cacheManager.pub(events.HISTORY, { level: "info", message: "Fetching server cache.", title });
+      try {
+        serverCache = await fetch("data.json").then((r) => r.json());
+
+        cacheManager.pub(events.HISTORY, { level: "info", message: "Successfully received server cache." });
+      } catch (e) {
+        cacheManager.pub(events.HISTORY, { level: "error", message: "Failed to fetch server cache." });
+      }
+
+      if (serverCache) {
+        cacheManager.pub(events.HISTORY, { level: "info", message: "Decrypting server cache." });
+        try {
+          decrypted = await decryptServerCache(encryptionKey, serverCache.data);
+
+          cacheManager.pub(events.HISTORY, { level: "info", message: "Successfully decrypted server cache." });
+        } catch (e) {
+          cacheManager.pub(events.DECRYPT, { level: "error", message: "Failed to completely decrypt server cache." });
+        }
+      }
+
+      if (decrypted) {
+        write(decrypted, serverCache.updated_at);
+
+        cacheManager.pub(events.HISTORY, { level: "info", message: "Decrypted data stored in localStorage." });
+      }
+    }
+
+    if (isFresh()) {
+      cacheManager.pub(events.UPDATED, { level: "complete", message: "Data up to data." });
+    } else {
+      cacheManager.pub(events.EXPIRED, {
+        level: "info",
+        message: "Local data is stale and needs to be updated.",
+        state: hasData() ? "open" : "all",
+        title,
+      });
+    }
+  },
+
   read,
   write,
 });

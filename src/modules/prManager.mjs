@@ -2,7 +2,7 @@ import { cacheManager, ONE_DAY } from "./cacheManager.mjs";
 import { fetchWithToken } from "./fetchWithToken.mjs";
 import { pubsubFactory } from "./pubsub.mjs";
 
-const FOLLOW_HEADER_LINKS = true; // FIXME: this needs to be true when deployed
+const FOLLOW_HEADER_LINKS = true;
 
 const daysOpen = (a = 0, b = 0) => (a && b ? parseInt((new Date(b) - new Date(a)) / ONE_DAY, 10) : 0);
 const login = ({ user }) => user.login;
@@ -11,6 +11,7 @@ const status = (a, b) => ["open", "closed", "merged"][!!a + !!b];
 const events = {
   INITIALIZED: "EVENT_PR_MANAGER_INITIALIZED",
   REQUEST: "EVENT_PR_MANAGER_REQUEST",
+  SOURCE: "EVENT_CACHE_MANAGER_SOURCE", // GitHub API
   UPDATED: "EVENT_PR_MANAGER_UPDATED",
 };
 
@@ -31,7 +32,7 @@ export const prManager = pubsubFactory("prManager", {
   async get(state = "open") {
     const urls = prManager.resources.map((uri) => `${uri}?per_page=100&state=${state}`);
 
-    const result = await Promise
+    return await Promise
       // make all API requests and follow all "next" (pagination) links in response headers
       .all(urls.map((uri) => prManager.request(uri, FOLLOW_HEADER_LINKS)))
       // simplify the data returned by the API
@@ -39,10 +40,6 @@ export const prManager = pubsubFactory("prManager", {
       .then(prManager.updateRecentlyClosedPRs.bind(prManager))
       // for each pull request get the comments;
       .then(prManager.getComments.bind(prManager));
-
-    prManager.pub("UPDATED", result);
-
-    return result;
   },
 
   // BEWARE! async recursion :) continuation passing style
@@ -62,6 +59,32 @@ export const prManager = pubsubFactory("prManager", {
       }))
       .catch((error) => ({ error, errored: true, ...pr }))
       .then((pr) => prManager.getComments(rest, withComments.concat(pr)));
+  },
+
+  async onExpired({ state }) {
+    let data;
+    let title = "Remote Data";
+
+    if (cacheManager.hasData()) {
+      prManager.pub(events.SOURCE, { level: "info", message: "Updating open PRs and recently closed.", title });
+    } else {
+      prManager.pub(events.SOURCE, { level: "info", message: "Fetching all PRs from the GitHub API...", title });
+      prManager.pub(events.SOURCE, { level: "info", message: "This will take a long time..." });
+      prManager.pub(events.SOURCE, { level: "info", message: "Seriously..." });
+      prManager.pub(events.SOURCE, { level: "info", message: "a..." });
+      prManager.pub(events.SOURCE, { level: "info", message: "long..." });
+      prManager.pub(events.SOURCE, { level: "info", message: "time." });
+    }
+
+    try {
+      data = await prManager.get(state);
+    } catch (e) {
+      prManager.pub(events.UPDATED, { level: "error", message: "Failed to update local data from API." });
+
+      throw e;
+    }
+
+    prManager.pub(events.UPDATED, { level: "info", data });
   },
 
   onInit({ encryptionKey, org, token, ...reposConfig }) {
