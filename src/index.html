@@ -212,54 +212,6 @@
         return all.length === 1 ? all[0] : all;
       };
     </script>
-    <script type="module">
-      import { cacheManager } from "./modules/cacheManager.mjs";
-      import { configManager } from "./modules/config.mjs";
-      import { displayOverview } from "./modules/overview.mjs";
-      import { prManager } from "./modules/prManager.mjs";
-      import { createOpenTimesPlot } from "./modules/openTimes.mjs";
-      import { addRatioCards } from "./modules/ratios.mjs";
-      import { statusDialog } from "./modules/statusDialog.mjs";
-      import { encryptedCopy } from "./modules/encryptedCopyLink.mjs";
-
-      // TODO: add app-version vector to the config to verify needing to invalidate local cache of data/credentials
-
-      // NOTE: reset updated_at to 2 hours in the past using browser console directly
-      // (function () {const temp = JSON.parse(localStorage.getItem("cache"));temp.updated_at -= 1000*60*60*2;localStorage.setItem("cache", JSON.stringify(temp))})()
-
-      function render() {
-        const { data } = cacheManager.read();
-
-        addRatioCards(data);
-        inDOM(`#ratios`).style.visibility = "visible";
-
-        createOpenTimesPlot(data);
-        inDOM("#openTimes").style.visibility = "visible";
-
-        inDOM("#copyData").style.visibility = "visible";
-      }
-
-      addEventListener("DOMContentLoaded", function appInit() {
-        configManager.sub(configManager.events.VALID, () => {
-          // FIXME|TODO: reformat localStorage data to not require special destructuring; e.g. `...reposConfig`
-          const { encryptionKey, org, token, ...reposConfig } = configManager.read();
-
-          displayOverview(org, reposConfig);
-        });
-
-        cacheManager.sub(cacheManager.events.UPDATED, render);
-        cacheManager.sub(configManager.events.VALID, "onValidConfig");
-        cacheManager.sub(prManager.events.UPDATED, "onUpdated");
-        Object.values(cacheManager.events).forEach((event) => statusDialog.sub(event, "handleEvents"));
-
-        prManager.sub(configManager.events.VALID, "onInit");
-        prManager.sub(cacheManager.events.EXPIRED, "onExpired");
-
-        statusDialog.sub(prManager.events.REQUEST, "handleEvents");
-        statusDialog.sub(encryptedCopy.events.ENCRYPT, "handleEvents");
-
-        configManager.init(); // this needs to be last to kick everything off
-      });
-    </script>
+    <script src="./modules/index.mjs" type="module"></script>
   </body>
 </html>
