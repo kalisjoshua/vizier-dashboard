@@ -1,11 +1,12 @@
 import { cacheManager } from "./cacheManager.mjs";
 import { configManager } from "./config.mjs";
+import { createDeploysPlot } from "./deploy.mjs";
+import { encryptedCopy } from "./encryptedCopyLink.mjs";
+import { createOpenTimesPlot } from "./openTimes.mjs";
 import { displayOverview } from "./overview.mjs";
 import { prManager } from "./prManager.mjs";
-import { createOpenTimesPlot } from "./openTimes.mjs";
 import { addRatioCards } from "./ratios.mjs";
 import { statusDialog } from "./statusDialog.mjs";
-import { encryptedCopy } from "./encryptedCopyLink.mjs";
 
 const show = (sel) => (inDOM(sel).style.visibility = "visible");
 
@@ -13,12 +14,15 @@ function render() {
   const { data } = cacheManager.read();
 
   addRatioCards(data);
-  show(`#ratios`);
+  show("#copyData");
+
+  createDeploysPlot(data);
+  show("#deploys");
 
   createOpenTimesPlot(data);
   show("#openTimes");
 
-  show("#copyData");
+  show(`#ratios`);
 }
 
 addEventListener("DOMContentLoaded", function appInit() {
