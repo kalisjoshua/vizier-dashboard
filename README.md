@@ -1,6 +1,11 @@
 # Vizier Dashboard
 
-This dashboard displays project metrics on: contribution ratios, pull request open time, and sonarcloud badges as an overview.
+This dashboard displays project metrics on:
+
+- Sonarcloud badges as an overview
+- Contribution ratios
+- Pull request "open time"
+- Deployments
 
 ## Contribution Ratios
 
@@ -12,6 +17,10 @@ Each bar of each graph is showing the ratio of: comments - on other contributors
 
 The purpose of this plot is to evaluate how long PRs take to get accepted. This plot is only considering: PRs that were "merged", and open for more than 1 day.
 
+## Deployments
+
+Assuming PR merge is synonymous with deployment the graph of deployments sums up the number of merges between Sundays (weekly).
+
 # Project
 
 Zero dependencies.
@@ -20,8 +29,8 @@ Zero dependencies.
 # start a server
 npx http-server src
 
-# testing - coming soon
-node --test
+# testing
+npm test
 ```
 
 # Cached Data

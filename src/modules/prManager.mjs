@@ -1,6 +1,6 @@
 import { cacheManager, ONE_DAY } from "./cacheManager.mjs";
 import { fetchWithToken } from "./fetchWithToken.mjs";
-import { pubsubFactory } from "./pubsub.mjs";
+import { addPubSub } from "./pubsub.mjs";
 
 const FOLLOW_HEADER_LINKS = true;
 
@@ -26,7 +26,7 @@ function formatSimple({ closed_at, created_at, merged_at, review_comments_url, u
   };
 }
 
-export const prManager = pubsubFactory("prManager", {
+export const prManager = addPubSub("prManager", {
   events,
 
   async get(state = "open") {

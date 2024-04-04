@@ -1,11 +1,11 @@
-import { pubsubFactory } from "./pubsub.mjs";
+import { addPubSub } from "./pubsub.mjs";
 
 const NAME = "cc-status-dialog";
 
 // prevent cancel with "escape" key
 const noCancel = (event) => event.preventDefault();
 
-export const statusDialog = pubsubFactory("statusDialog", {
+export const statusDialog = addPubSub("statusDialog", {
   events: {},
   handleEvents({ level, message, title }) {
     let dialog = StatusDialog.getInstance();

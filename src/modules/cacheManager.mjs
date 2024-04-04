@@ -1,5 +1,5 @@
 import { decrypt } from "./crypto.mjs";
-import { pubsubFactory } from "./pubsub.mjs";
+import { addPubSub } from "./pubsub.mjs";
 
 const ONE_HOUR = 1000 * 60 * 60;
 
@@ -64,7 +64,7 @@ function write(updates, cached_at = Date.now() - CACHE_TIME * 2) {
   return data;
 }
 
-export const cacheManager = pubsubFactory("cacheManager", {
+export const cacheManager = addPubSub("cacheManager", {
   events,
   hasData,
   isFresh,

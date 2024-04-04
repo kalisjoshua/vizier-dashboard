@@ -1,11 +1,11 @@
 import { debounce } from "./debounce.mjs";
 import { fetchWithToken } from "./fetchWithToken.mjs";
-import { pubsubFactory } from "./pubsub.mjs";
+import { addPubSub } from "./pubsub.mjs";
 
 const NAME = "cc-config-editor";
 const STORE_KEY = "config";
 
-export const configManager = pubsubFactory("config", {
+export const configManager = addPubSub("config", {
   events: { VALID: "CONFIG_EVENT_VALID" },
 
   getValidations(config = this.read()) {

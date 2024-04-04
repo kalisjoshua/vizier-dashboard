@@ -1,11 +1,11 @@
 import { cacheManager } from "./cacheManager.mjs";
 import { configManager } from "./config.mjs";
-import { pubsubFactory } from "./pubsub.mjs";
+import { addPubSub } from "./pubsub.mjs";
 import { encrypt } from "./crypto.mjs";
 
 const NAME = "cc-encrypted-copy-link";
 
-export const encryptedCopy = pubsubFactory("encryptedCopy", {
+export const encryptedCopy = addPubSub("encryptedCopy", {
   events: {
     ENCRYPT: "EVENT_ENCRYPTED_COPY_EVENT",
   },

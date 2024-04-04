@@ -1,13 +1,16 @@
 {
   "name": "vizier-dashboard",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "pull request metrics dashboard",
   "main": "src/index.html",
   "directories": {
     "src": "src"
   },
   "scripts": {
-    "start": "npx http-server src"
+    "start": "npx http-server src",
+    "test": "node --test --watch",
+    "test:cover": "node --test --experimental-test-coverage",
+    "test:lcov": "node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=lcov.info"
   },
   "repository": {
     "type": "git",
