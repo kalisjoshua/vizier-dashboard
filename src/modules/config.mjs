@@ -1,6 +1,6 @@
-import { debounce } from "./debounce.mjs";
-import { fetchWithToken } from "./fetchWithToken.mjs";
-import { addPubSub } from "./pubsub.mjs";
+import { debounce } from "../utilities/debounce.mjs";
+import { fetchWithToken } from "../utilities/fetchWithToken.mjs";
+import { addPubSub } from "../utilities/pubsub.mjs";
 
 const NAME = "cc-config-editor";
 const STORE_KEY = "config";

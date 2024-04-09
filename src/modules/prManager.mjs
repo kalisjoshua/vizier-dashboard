@@ -1,6 +1,6 @@
-import { cacheManager, ONE_DAY } from "./cacheManager.mjs";
-import { fetchWithToken } from "./fetchWithToken.mjs";
-import { addPubSub } from "./pubsub.mjs";
+import { cacheManager, ONE_DAY } from "./cacheManager.mjs"; // FIXME: remove dependency on cacheManager
+import { fetchWithToken } from "../utilities/fetchWithToken.mjs";
+import { addPubSub } from "../utilities/pubsub.mjs";
 
 const FOLLOW_HEADER_LINKS = true;
 
@@ -116,7 +116,7 @@ export const prManager = addPubSub("prManager", {
   },
 
   async updateRecentlyClosedPRs(all) {
-    const { data } = cacheManager.read() ?? {}; // FIXME: remove dependency on cacheManager
+    const { data } = cacheManager.read() ?? {};
 
     if (!data) return all;
 

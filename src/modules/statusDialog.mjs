@@ -1,4 +1,4 @@
-import { addPubSub } from "./pubsub.mjs";
+import { addPubSub } from "../utilities/pubsub.mjs";
 
 const NAME = "cc-status-dialog";
 

@@ -1,7 +1,7 @@
 import { cacheManager } from "./cacheManager.mjs";
 import { configManager } from "./config.mjs";
-import { addPubSub } from "./pubsub.mjs";
-import { encrypt } from "./crypto.mjs";
+import { addPubSub } from "../utilities/pubsub.mjs";
+import { encrypt } from "../utilities/crypto.mjs";
 
 const NAME = "cc-encrypted-copy-link";
 

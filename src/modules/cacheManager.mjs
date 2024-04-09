@@ -1,5 +1,5 @@
-import { decrypt } from "./crypto.mjs";
-import { addPubSub } from "./pubsub.mjs";
+import { decrypt } from "../utilities/crypto.mjs";
+import { addPubSub } from "../utilities/pubsub.mjs";
 
 const ONE_HOUR = 1000 * 60 * 60;
 
@@ -14,6 +14,7 @@ const lastUpdated = () => read()?.updated_at;
 
 const events = {
   DECRYPT: "EVENT_CACHE_MANAGER_DECRYPT", // decrypt server cached data
+  EMPTY: "EVENT_CACHE_MANAGER_EMPTY", //
   EXPIRED: "EVENT_CACHE_MANAGER_EXPIRED", // the cached data has expired/gone stale
   HISTORY: "EVENT_CACHE_MANAGER_HISTORY", // server cache
   STATUS: "EVENT_CACHE_MANAGER_STATUS", //
@@ -38,7 +39,6 @@ async function decryptServerCache(encryptionKey, data) {
         message: `<p>Decrypting data for PR ${index} of ${length}.</p>`,
       });
 
-      // decrypt all of the pr records
       return JSON.parse(await decrypt(pr, encryptionKey));
     })
   );
@@ -47,7 +47,7 @@ async function decryptServerCache(encryptionKey, data) {
 function read() {
   const cache = localStorage.getItem(STORE_KEY);
 
-  return cache ? JSON.parse(cache) : null;
+  return cache && JSON.parse(cache);
 }
 
 function write(updates, cached_at = Date.now() - CACHE_TIME * 2) {
@@ -57,9 +57,7 @@ function write(updates, cached_at = Date.now() - CACHE_TIME * 2) {
     return acc;
   }, read()?.data ?? {});
 
-  const updated_at = cached_at ?? Date.now();
-
-  localStorage.setItem(STORE_KEY, JSON.stringify({ data, updated_at }));
+  localStorage.setItem(STORE_KEY, JSON.stringify({ data, updated_at: cached_at }));
 
   return data;
 }
@@ -70,16 +68,18 @@ export const cacheManager = addPubSub("cacheManager", {
   isFresh,
   lastUpdated,
 
-  onUpdated({ data }) {
+  onUpdated({ data } = {}) {
     if (data) {
       write(data, Date.now());
-    }
 
-    cacheManager.pub(events.UPDATED, {
-      level: "complete",
-      message: "Data up to data.",
-      // title, // include to show dialog even if everything is up to date; disable to skip a dialog when up to date
-    });
+      cacheManager.pub(events.UPDATED, { level: "complete", message: "Data up to data. ;)" });
+    } else {
+      const message = "No data provided to cacheManager.onUpdated";
+
+      cacheManager.pub(events.EMPTY, { level: "error", message });
+
+      throw new Error(message);
+    }
   },
 
   async onValidConfig({ encryptionKey }) {
@@ -117,7 +117,7 @@ export const cacheManager = addPubSub("cacheManager", {
     }
 
     if (isFresh()) {
-      cacheManager.pub(events.UPDATED, { level: "complete", message: "Data up to data." });
+      cacheManager.pub(events.UPDATED, { level: "complete", message: "Data up to data. ;)" });
     } else {
       cacheManager.pub(events.EXPIRED, {
         level: "info",
