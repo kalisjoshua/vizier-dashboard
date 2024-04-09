@@ -1,5 +1,5 @@
 import { cacheManager } from "./cacheManager.mjs";
-import { configManager } from "./config.mjs";
+import { configManager } from "./configManager.mjs";
 import { addPubSub } from "../utilities/pubsub.mjs";
 import { encrypt } from "../utilities/crypto.mjs";
 

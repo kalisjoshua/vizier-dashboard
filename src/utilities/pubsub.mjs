@@ -34,7 +34,14 @@ export function addPubSub(name = requiredArg("addPubSub", "name"), config = requ
      * function to execute for the event
      */
     sub(event = requiredArg(name, "event"), handler = requiredArg(name, "handler")) {
-      addEventListener(event, ({ detail }) => (this[handler]?.bind(this) ?? handler)(JSON.parse(detail)));
+      subscribe.call(this, event, this[handler]?.bind(this) ?? handler);
     },
   });
+}
+
+export function subscribe(
+  event = requiredArg("bare subscribe", "event"),
+  handler = requiredArg("bare subscribe", "handler")
+) {
+  addEventListener(event, ({ detail }) => handler(JSON.parse(detail)));
 }

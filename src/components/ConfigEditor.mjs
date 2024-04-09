@@ -1,88 +1,30 @@
 import { debounce } from "../utilities/debounce.mjs";
 import { fetchWithToken } from "../utilities/fetchWithToken.mjs";
-import { addPubSub } from "../utilities/pubsub.mjs";
 
-const NAME = "cc-config-editor";
-const STORE_KEY = "config";
-
-export const configManager = addPubSub("config", {
-  events: { VALID: "CONFIG_EVENT_VALID" },
-
-  getValidations(config = this.read()) {
-    const missing = [];
-    const missingProp = (name) => missing.push(`Missing "${name}" property.`);
-
-    const { encryptionKey, org, token, ...reposConfig } = config;
-
-    ["encryptionKey", "org", "token"].forEach((prop) => {
-      if (!config[prop]) missingProp(prop);
-    });
-
-    if (!Object.keys(reposConfig).length) {
-      missing.push(`No repositories defined.`);
-    } else {
-      const expectedProps = ["sonar"];
-
-      Object.entries(reposConfig).forEach(([name, repo]) => {
-        const props = Object.keys(repo);
-
-        expectedProps.forEach((expected) => {
-          if (!props.includes(expected)) {
-            missingProp(`${name}.${expected}`);
-          }
-        });
-      });
-    }
-
-    return missing;
-  },
-
-  init() {
-    const el = inDOM(`[is="${NAME}"]`);
-
-    el.style.visibility = "visible";
-
-    if (this.isValid()) {
-      el.removeAttribute("open");
-
-      // FIXME: there is probably a better way to go about this using `attributeChangedCallback`
-      // populate the field for copy-ing
-      inDOM(`[is="${NAME}"] #config-string`).value = JSON.stringify(configManager.read());
-      inDOM(`[is="${NAME}"] button[data-type="copy"]`).disabled = false;
-
-      this.pub("VALID", configManager.read());
-    }
-  },
-
-  isValid(config = this.read()) {
-    return !this.getValidations(config).length;
-  },
-
-  read: () => JSON.parse(localStorage.getItem(STORE_KEY) ?? "{}"),
-
-  write: (config) => localStorage.setItem(STORE_KEY, JSON.stringify(config)),
-});
-
-class ConfigEditor extends HTMLDetailsElement {
+export class ConfigEditor extends HTMLDetailsElement {
   #buttonCopy;
   #buttonSave;
   #buttonTest;
   #configJSON;
+  #configManager;
   #configString;
+  static ELEMENT_NAME = "cc-config-editor";
   #errors;
   #invalid;
   #needingCleanup = [];
   #token;
 
-  connectedCallback() {
-    this.#buttonCopy = inDOM(`[is="${NAME}"] button[data-type="copy"]`);
-    this.#buttonTest = inDOM(`[is="${NAME}"] button[data-type="test"]`);
-    this.#buttonSave = inDOM(`[is="${NAME}"] button[type="submit"]`);
-    this.#configJSON = inDOM(`[is="${NAME}"] #config-json`);
-    this.#configString = inDOM(`[is="${NAME}"] #config-string`);
-    this.#errors = inDOM(`[is="${NAME}"] #formatting-errors`);
-    this.#invalid = inDOM(`[is="${NAME}"] #error-invalidJSON`);
-    this.#token = inDOM(`[is="${NAME}"] #token`);
+  async connectedCallback() {
+    this.#configManager = (await import("../modules/configManager.mjs"))?.configManager;
+
+    this.#buttonCopy = inDOM(`[is="${ConfigEditor.ELEMENT_NAME}"] button[data-type="copy"]`);
+    this.#buttonTest = inDOM(`[is="${ConfigEditor.ELEMENT_NAME}"] button[data-type="test"]`);
+    this.#buttonSave = inDOM(`[is="${ConfigEditor.ELEMENT_NAME}"] button[type="submit"]`);
+    this.#configJSON = inDOM(`[is="${ConfigEditor.ELEMENT_NAME}"] #config-json`);
+    this.#configString = inDOM(`[is="${ConfigEditor.ELEMENT_NAME}"] #config-string`);
+    this.#errors = inDOM(`[is="${ConfigEditor.ELEMENT_NAME}"] #formatting-errors`);
+    this.#invalid = inDOM(`[is="${ConfigEditor.ELEMENT_NAME}"] #error-invalidJSON`);
+    this.#token = inDOM(`[is="${ConfigEditor.ELEMENT_NAME}"] #token`);
 
     this.#withCleanup(this.#buttonCopy, "click", this.#handleClipboard);
     this.#withCleanup(this.#buttonSave, "click", this.#handleSave);
@@ -128,14 +70,14 @@ class ConfigEditor extends HTMLDetailsElement {
     }
     // if (!this.#isValid()) // this isn't possible because the button is disabled when invalid
     else if (this.#isValid()) {
-      configManager.write({
+      this.#configManager.write({
         token: this.#token.value.trim(),
         ...JSON.parse(this.#configString.value),
       });
 
-      configManager.pub(configManager.events.VALID, configManager.read());
+      this.#configManager.pub(this.#configManager.events.VALID, this.#configManager.read());
 
-      inDOM(`[is="${NAME}"]`).removeAttribute("open");
+      inDOM(`[is="${ConfigEditor.ELEMENT_NAME}"]`).removeAttribute("open");
     }
   }
 
@@ -165,7 +107,7 @@ class ConfigEditor extends HTMLDetailsElement {
     }
 
     if (parsed) {
-      errors = configManager.getValidations({
+      errors = this.#configManager.getValidations({
         ...parsed,
         token: this.#token.value.trim(),
       });
@@ -181,7 +123,7 @@ class ConfigEditor extends HTMLDetailsElement {
   }
 
   #loadLocalState() {
-    const { token, ...config } = configManager.read();
+    const { token, ...config } = this.#configManager.read();
 
     this.#token.value = token;
     this.#configJSON.value = JSON.stringify(config, null, 2);
@@ -211,4 +153,4 @@ class ConfigEditor extends HTMLDetailsElement {
   }
 }
 
-customElements.define(NAME, ConfigEditor, { extends: "details" });
+customElements.define(ConfigEditor.ELEMENT_NAME, ConfigEditor, { extends: "details" });

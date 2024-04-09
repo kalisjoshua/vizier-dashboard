@@ -215,6 +215,57 @@
         return all.length === 1 ? all[0] : all;
       };
     </script>
-    <script src="./modules/index.mjs" type="module"></script>
+    <script type="module">
+      import { cacheManager } from "./modules/cacheManager.mjs";
+      import { configManager } from "./modules/configManager.mjs";
+      import { createDeploysPlot } from "./modules/deploy.mjs";
+      import { encryptedCopy } from "./modules/encryptedCopyLink.mjs";
+      import { createOpenTimesPlot } from "./modules/openTimes.mjs";
+      import { displayOverview } from "./modules/overview.mjs";
+      import { prManager } from "./modules/prManager.mjs";
+      import { addRatioCards } from "./modules/ratios.mjs";
+      import { StatusDialog } from "./components/StatusDialog.mjs";
+
+      const setVisible = (sel) => (inDOM(sel).style.visibility = "visible");
+
+      function render() {
+        const { data } = cacheManager.read();
+
+        addRatioCards(data);
+        setVisible("#copyData");
+
+        createDeploysPlot(data);
+        setVisible("#deploys");
+
+        createOpenTimesPlot(data);
+        setVisible("#openTimes");
+
+        setVisible(`#ratios`);
+      }
+
+      addEventListener("DOMContentLoaded", function appInit() {
+        configManager.sub(configManager.events.VALID, () => {
+          const { encryptionKey, org, token, ...reposConfig } = configManager.read();
+
+          displayOverview(org, reposConfig);
+        });
+
+        cacheManager.sub(cacheManager.events.UPDATED, render);
+        cacheManager.sub(configManager.events.VALID, "onValidConfig");
+        cacheManager.sub(prManager.events.UPDATED, "onUpdated");
+
+        prManager.sub(configManager.events.VALID, "onInit");
+        prManager.sub(cacheManager.events.EXPIRED, "onExpired");
+
+        StatusDialog.listenFor(
+          // forced formatting
+          prManager.events.REQUEST,
+          encryptedCopy.events.ENCRYPT,
+          ...Object.values(cacheManager.events)
+        );
+
+        configManager.init(); // this needs to be last to kick everything off
+      });
+    </script>
   </body>
 </html>

@@ -1,32 +1,10 @@
-import { addPubSub } from "../utilities/pubsub.mjs";
-
-const NAME = "cc-status-dialog";
+import { subscribe } from "../utilities/pubsub.mjs";
 
 // prevent cancel with "escape" key
 const noCancel = (event) => event.preventDefault();
 
-export const statusDialog = addPubSub("statusDialog", {
-  events: {},
-  handleEvents({ level, message, title }) {
-    let dialog = StatusDialog.getInstance();
-
-    if (title && !dialog) {
-      StatusDialog.insert(title, message);
-    }
-
-    dialog ??= StatusDialog.getInstance();
-
-    if (!title && message && dialog) {
-      dialog.appendToLog(message);
-    }
-
-    if (/^complete$/i.test(level.trim())) {
-      dialog?.setComplete();
-    }
-  },
-});
-
-class StatusDialog extends HTMLDialogElement {
+export class StatusDialog extends HTMLDialogElement {
+  static ELEMENT_NAME = "cc-status-dialog";
   static #instance;
   #output;
 
@@ -35,7 +13,7 @@ class StatusDialog extends HTMLDialogElement {
 
     StatusDialog.#instance = this;
 
-    this.setAttribute("is", NAME);
+    this.setAttribute("is", StatusDialog.ELEMENT_NAME);
 
     this.style = `
       border-radius: 2ex;
@@ -64,8 +42,26 @@ class StatusDialog extends HTMLDialogElement {
     return StatusDialog.#instance;
   }
 
+  static handleEvents({ level, message, title }) {
+    let dialog = StatusDialog.getInstance();
+
+    if (title && !dialog) {
+      StatusDialog.insert(title, message);
+    }
+
+    dialog ??= StatusDialog.getInstance();
+
+    if (!title && message && dialog) {
+      dialog.appendToLog(message);
+    }
+
+    if (/^complete$/i.test(level.trim())) {
+      dialog?.setComplete();
+    }
+  }
+
   static insert(title, message) {
-    const dialog = document.createElement("dialog", { is: NAME });
+    const dialog = document.createElement("dialog", { is: StatusDialog.ELEMENT_NAME });
 
     dialog.innerHTML = `
       <h2 id="status-dialog--title">${title}</h2>
@@ -74,6 +70,10 @@ class StatusDialog extends HTMLDialogElement {
     `;
 
     document.body.appendChild(dialog);
+  }
+
+  static listenFor(...events) {
+    events.forEach((event) => subscribe(event, StatusDialog.handleEvents));
   }
 
   setComplete() {
@@ -92,4 +92,4 @@ class StatusDialog extends HTMLDialogElement {
   }
 }
 
-customElements.define(NAME, StatusDialog, { extends: "dialog" });
+customElements.define(StatusDialog.ELEMENT_NAME, StatusDialog, { extends: "dialog" });
