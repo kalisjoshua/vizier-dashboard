@@ -20,9 +20,10 @@ export function addPubSub(name = requiredArg("addPubSub", "name"), config = requ
      * @param {any} data - data (any type) to pass to the event handler
      */
     pub(event = requiredArg(name, "event"), data = {}) {
-      setTimeout(() => {
-        dispatchEvent(new CustomEvent(this.events[event] ?? event, { detail: JSON.stringify(data) }));
-      }, 1);
+      const detail = JSON.stringify(data);
+      const custom = new CustomEvent(this.events[event] ?? event, { detail });
+
+      setTimeout(() => dispatchEvent(custom), 1);
     },
 
     /**
@@ -39,9 +40,14 @@ export function addPubSub(name = requiredArg("addPubSub", "name"), config = requ
   });
 }
 
-export function subscribe(
-  event = requiredArg("bare subscribe", "event"),
-  handler = requiredArg("bare subscribe", "handler")
-) {
+/**
+ * Subscribe, to an event, the provided method name or function definition.
+ *
+ * @param {string} event - string name of event
+ *
+ * @param {function|string} handler - name of a method (string) or a
+ * function to execute for the event
+ */
+export function subscribe(event = requiredArg("subscribe", "event"), handler = requiredArg("subscribe", "handler")) {
   addEventListener(event, ({ detail }) => handler(JSON.parse(detail)));
 }

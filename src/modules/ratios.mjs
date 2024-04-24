@@ -13,14 +13,12 @@ const caseInsensitiveAlphaSort = (function () {
   };
 })();
 
-export function addRatioCards(data) {
-  const excludedNames = ["devops-vistingmedia", "dependabot[bot]", "mzyla-softserve"];
-
+export function addRatioCards(data, excludedContributors = []) {
   // clear the element to not continually add the same content multiple times
   RatioCard.WRAPPER.innerHTML = "";
 
   Object.entries(getCounts(data))
-    .filter(([name]) => !excludedNames.includes(name.toLowerCase()))
+    .filter(([name]) => !excludedContributors.includes(name.toLowerCase()))
     .sort(caseInsensitiveAlphaSort)
     .forEach(RatioCard.addCard);
 }
