@@ -1,3 +1,5 @@
 import { init } from "./modules/init.mjs";
 
-init();
+init({
+  // excludedContributors: ["all contributions"],
+});

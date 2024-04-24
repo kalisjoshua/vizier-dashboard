@@ -1,70 +1,55 @@
 import { RatioCard } from "../components/RatioCard.mjs";
 
+const ALL_CONTRIBUTIONS = "all contributions";
+const AUTHORED = 1;
+const COMMENTED = 0;
 const ONE_DAY = 1000 * 60 * 60 * 24;
-
-const caseInsensitiveAlphaSort = (function () {
-  const bin = (b) => `${b | 0}`;
-  const low = ([x]) => x.toLowerCase();
-
-  return (a, b) => {
-    const [aa, bb] = [a, b].map(low);
-
-    return parseInt(bin(aa > bb) + bin(aa === bb), 2) - 1;
-  };
-})();
+const compareStrings = (a, b) => (a > b ? 1 : a < b ? -1 : 0);
+const monthlyRanges = [1, 2, 3, 6].map((months) => new Date(new Date() - ONE_DAY * months * 30));
+const startingPoint = () => [0, 0]; // [comments, authored]
 
 export function addRatioCards(data, excludedContributors = []) {
   // clear the element to not continually add the same content multiple times
   RatioCard.WRAPPER.innerHTML = "";
 
-  Object.entries(getCounts(data))
+  const counts = Object.values(data).reduce(countAllContributions, {});
+
+  Object.entries(counts)
     .filter(([name]) => !excludedContributors.includes(name.toLowerCase()))
-    .sort(caseInsensitiveAlphaSort)
+    .sort(([a], [b]) => compareStrings(a.toLowerCase(), b.toLowerCase()))
     .forEach(RatioCard.addCard);
 }
 
-function getCounts(data) {
-  const AUTHORED = 1;
-  const COMMENTED = 0;
-  const monthlyRanges = [1, 2, 3, 6].map((months) => new Date(new Date() - ONE_DAY * months * 30));
+function addToContributionCount(closedDate, acc, person, type) {
+  // intentional mutation!
+  acc[person] ??= [
+    // one for each monthly range
+    ...monthlyRanges.map(startingPoint),
+    // another for all time
+    startingPoint(),
+  ];
 
-  function collect(closed, obj, key, type) {
-    monthlyRanges.forEach((date, index) => {
-      if (date <= closed) {
-        obj[key][index][type] += 1;
-      }
-    });
+  monthlyRanges.forEach((date, index) => {
+    if (date <= closedDate) {
+      acc[person][index][type] += 1;
+    }
+  });
 
-    obj[key][4][type] += 1;
-  }
+  acc[person][monthlyRanges.length][type] += 1;
+}
 
-  function initialValues(obj, key) {
-    // [comments, authored]
-    const val = () => [0, 0];
+function countAllContributions(acc, { author, closed_at, comments_from = [] }) {
+  const closedDate = new Date(closed_at ?? Date.now());
 
-    // intentional mutation!
-    obj[key] ??= [
-      // one for each monthly range
-      ...monthlyRanges.map(val),
-      // another for all time
-      val(),
-    ];
-  }
+  addToContributionCount(closedDate, acc, author, AUTHORED);
+  addToContributionCount(closedDate, acc, ALL_CONTRIBUTIONS, AUTHORED);
 
-  return Object.values(data).reduce((acc, { author, closed_at, comments_from = [] }) => {
-    const closed = new Date(closed_at ?? Date.now());
+  comments_from.forEach((commentor) => {
+    if (commentor !== author) {
+      addToContributionCount(closedDate, acc, commentor, COMMENTED);
+      addToContributionCount(closedDate, acc, ALL_CONTRIBUTIONS, COMMENTED);
+    }
+  });
 
-    initialValues(acc, author);
-    collect(closed, acc, author, AUTHORED);
-
-    comments_from.forEach((person) => {
-      if (person !== author) {
-        initialValues(acc, person);
-
-        collect(closed, acc, person, COMMENTED);
-      }
-    });
-
-    return acc;
-  }, {});
+  return acc;
 }
