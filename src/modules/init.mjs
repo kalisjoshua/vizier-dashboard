@@ -26,7 +26,6 @@ export function init(config = {}) {
     prManager.sub(cacheManager.events.EXPIRED, "onExpired");
 
     StatusDialog.listenFor(
-      // forced formatting
       prManager.events.REQUEST,
       encryptedCopy.events.ENCRYPT,
       ...Object.values(cacheManager.events)

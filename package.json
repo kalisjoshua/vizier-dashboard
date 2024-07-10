@@ -1,6 +1,6 @@
 {
   "name": "vizier-dashboard",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "pull request metrics dashboard",
   "main": "src/index.html",
   "directories": {
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "npx http-server src",
-    "test": "node --test --watch",
+    "test": "clear && node --test --watch",
     "test:cover": "node --test --experimental-test-coverage",
     "test:lcov": "node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=lcov.info",
     "uncovered": "npx coverage-node ./src/**/*.test.mjs"

@@ -51,7 +51,7 @@ export const prManager = addPubSub("prManager", {
     const { review_comments_url, ...pr } = head;
 
     return prManager
-      .request(review_comments_url, null) // FIXME: should this be `null`?
+      .request(review_comments_url, FOLLOW_HEADER_LINKS)
       .then((comments = []) => ({
         ...pr,
         comment_count: comments.length,
