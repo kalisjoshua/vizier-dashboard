@@ -118,6 +118,14 @@
         <div id="formatting-errors"></div>
 
         <div style="align-items: center; display: flex; justify-content: flex-end">
+          <button
+            onclick="localStorage.removeItem('config')"
+            style="background: #b03a2e; border-color: darkred; border-radius: 4px; color: white; font-weight: bold"
+            title="Click this button to clear the local config; and start over"
+          >
+            Remove config data
+          </button>
+
           <p
             id="error-invalidJSON"
             style="
@@ -125,7 +133,7 @@
               border-radius: 5px;
               color: darkred;
               flex-grow: 1;
-              margin: 0 1em 0 0;
+              margin: 0 1em;
               padding: 1ex 1em;
               text-align: right;
               visibility: hidden;
@@ -200,7 +208,16 @@
         </p>
 
         <button
+          onclick="localStorage.removeItem('cache')"
+          style="background: #b03a2e; border-color: darkred; border-radius: 4px; color: white; font-weight: bold"
+          title="Click this button to clear the local cache; and start over"
+        >
+          Remove cached data
+        </button>
+
+        <button
           is="cc-encrypted-copy-link"
+          style="float: right"
           title="Copy encrypted data to clipboard for hosting as fetch-able server side cache"
         >
           Copy data

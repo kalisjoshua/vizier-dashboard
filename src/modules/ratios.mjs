@@ -12,6 +12,7 @@ export function addRatioCards(data, excludedContributors = []) {
   // clear the element to not continually add the same content multiple times
   RatioCard.WRAPPER.innerHTML = "";
 
+  // console.log(data);
   const counts = Object.values(data).reduce(countAllContributions, {});
 
   Object.entries(counts)

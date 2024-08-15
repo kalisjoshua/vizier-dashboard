@@ -87,7 +87,7 @@ export const prManager = addPubSub("prManager", {
     prManager.pub(events.UPDATED, { level: "info", data });
   },
 
-  onInit({ encryptionKey, org, token, ...reposConfig }) {
+  onInit(config) {
     const REL_NEXT = /<([^>,]+?)>;\s*rel="next"/;
 
     Object.assign(prManager, {
@@ -96,7 +96,7 @@ export const prManager = addPubSub("prManager", {
 
         prManager.pub("REQUEST", { level: "info", message: `Fetching ${uri.replace(/.*?repos\//, "")}` });
 
-        return await fetchWithToken(token, uri)
+        return await fetchWithToken(config.token, uri)
           .then(async (response) => {
             const next = followNext && response.headers.get("link")?.match(REL_NEXT)?.at(1);
             const result = await response.json();
@@ -109,7 +109,7 @@ export const prManager = addPubSub("prManager", {
           .then((result) => (result.length === 1 ? result[0] : result));
       },
 
-      resources: Object.keys(reposConfig).map((repo) => `repos/${org}/${repo}/pulls`),
+      resources: Object.keys(config.repos).map((repo) => `repos/${repo}/pulls`),
     });
 
     prManager.pub("INITIALIZED");

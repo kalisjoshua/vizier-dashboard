@@ -50,3 +50,25 @@ In one project using this the package defines this project as a dependent module
     "start": "npx http-server"
   },
 ```
+
+# Config
+
+Example config object:
+
+```json
+{
+  "repos": {
+    "...github_org/...repo": {
+      "encryptionKey": "...",
+      "sonar": [
+        {
+          "label": "...",
+          "project": "...",
+          "token": "..."
+        }
+        // ...
+      ]
+    }
+  }
+}
+```

@@ -8,27 +8,20 @@ export const configManager = addPubSub("config", {
 
   getValidations(config = this.read()) {
     const missing = [];
-    const missingProp = (name) => missing.push(`Missing "${name}" property.`);
+    const missingProp = (name, detail = "") => missing.push(`Missing "${name}" property${(detail && "; ") + detail}.`);
 
-    const { encryptionKey, org, token, ...reposConfig } = config;
-
-    ["encryptionKey", "org", "token"].forEach((prop) => {
-      if (!config[prop]) missingProp(prop);
-    });
-
-    if (!Object.keys(reposConfig).length) {
-      missing.push(`No repositories defined.`);
+    if (!config.repos || !Object.keys(config.repos).length) {
+      missingProp("repos");
     } else {
-      const expectedProps = ["sonar"];
+      Object.entries(config.repos).find(([repo, { encryptionKey, sonar }]) => {
+        if (!encryptionKey) missing("encryptionKey", `for repo: "${repo}"`);
 
-      Object.entries(reposConfig).forEach(([name, repo]) => {
-        const props = Object.keys(repo);
-
-        expectedProps.forEach((expected) => {
-          if (!props.includes(expected)) {
-            missingProp(`${name}.${expected}`);
-          }
-        });
+        if (sonar && sonar.length) {
+          sonar.forEach(({ label, project, token }) => {
+            if (!project) missing("project", `for repo: "${repo}" sonar "${label ?? project}"`);
+            if (!token) missing("token", `for repo: "${repo}" sonar "${label ?? project}"`);
+          });
+        }
       });
     }
 

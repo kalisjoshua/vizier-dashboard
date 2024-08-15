@@ -12,13 +12,14 @@ const setVisible = (sel) => (inDOM(sel).style.visibility = "visible");
 
 export function init(config = {}) {
   addEventListener("DOMContentLoaded", function appInit() {
-    configManager.sub(configManager.events.VALID, () => {
-      const { encryptionKey, org, token, ...reposConfig } = configManager.read();
+    // configManager.sub(configManager.events.VALID, () => {
+    //   const { encryptionKey, org, token, ...reposConfig } = configManager.read();
 
-      displayOverview(org, reposConfig);
-    });
+    //   displayOverview(org, reposConfig);
+    // });
+    configManager.sub(configManager.events.VALID, displayOverview);
 
-    cacheManager.sub(cacheManager.events.UPDATED, () => render(config.excludedContributors));
+    cacheManager.sub(cacheManager.events.UPDATED, () => render(config.excludedContributors, config.dataFilter));
     cacheManager.sub(configManager.events.VALID, "onValidConfig");
     cacheManager.sub(prManager.events.UPDATED, "onUpdated");
 
@@ -35,8 +36,8 @@ export function init(config = {}) {
   });
 }
 
-function render(excludedContributors = []) {
-  const { data } = cacheManager.read();
+function render(excludedContributors = [], dataFilter = (all) => all) {
+  const { data } = dataFilter(cacheManager.read());
 
   addRatioCards(data, excludedContributors);
   setVisible("#copyData");
